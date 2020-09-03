@@ -6,7 +6,10 @@ import com.space.model.ShipType;
 import com.space.service.ShipService;
 import com.space.service.ShipValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -14,9 +17,11 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.beans.PropertyEditorSupport;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+
+//import javax.validation.Valid;
 
 @Controller
 public class ShipController {
@@ -74,15 +79,14 @@ public class ShipController {
 
         List<Ship> findShip = shipService.getShipsList(name, planet, shipType, after, before, isUsed, minSpeed, maxSpeed, minCrewSize, maxCrewSize, minRating, maxRating, order);
         Pageable pagesAndSort = PageRequest.of(pageNumber, pageSize);
-        int max = (pageSize * (pageNumber + 1) > findShip.size()) ? findShip.size() : pageSize * (pageNumber + 1);
+        int max = Math.max( findShip.size() , pageSize * (pageNumber + 1));
         Page<Ship> ships = new PageImpl<>(findShip.subList(pageNumber * pageSize, max), pagesAndSort, findShip.size());
 
         return ResponseEntity.ok().body(ships.getContent());
     }
 
-
     @PostMapping("/rest/ships/")
-    public  ResponseEntity<?> createShip (@RequestBody @Valid Ship ship, BindingResult result) {
+    public  ResponseEntity<?> createShip (@RequestBody Ship ship, BindingResult result) {
 
         if(result.hasErrors()) {
             return new ResponseEntity<>(result.getAllErrors(), HttpStatus.BAD_REQUEST);
@@ -165,7 +169,9 @@ public class ShipController {
         }
         if (ship.getProdDate() != null) {
             existingShip.setProdDate(ship.getProdDate());
-            if (existingShip.getProdDate().compareTo(new Date(2800,01,01))<0 && (existingShip.getProdDate().compareTo(new Date(3019,12,31))>0) || existingShip.getProdDate().getTime()<0 ){
+
+            if (existingShip.getProdDate().compareTo(new Date(2800,1,1))<0
+                    && (existingShip.getProdDate().compareTo(new Date(3019,12,31))>0) || existingShip.getProdDate().getTime()<0 ){
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         }
